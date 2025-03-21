@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 # Load dataset
-day_df = pd.read_csv("/Users/tika/Documents/CC DICODING/Proyek Analisis Data/Data/day.csv")
+day_df = pd.read_csv("Dashboard/day.csv")
 
 ### Cleaning Data
 # Menghapus duplikasi

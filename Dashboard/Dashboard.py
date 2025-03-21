@@ -6,75 +6,41 @@ import streamlit as st
 # Load dataset
 day_df = pd.read_csv("Dashboard/day.csv")
 
-### Cleaning Data
-# Menghapus duplikasi
-day_df.drop_duplicates(inplace=True)
+# Sidebar Filtering
+season_options = ['All Season', 'Spring', 'Summer', 'Fall', 'Winter']
+season = st.selectbox("Pilih Musim:", season_options)
 
-# Mengecek missing values
-missing_values = day_df.isnull().sum()
+work_options = ['All', 'Workday', 'Weekend']
+workday = st.selectbox("Pilih Hari Kerja atau Akhir Pekan:", work_options)
 
-## Streamlit Dashboard
-st.title("Dashboard Analisis Peminjaman Sepeda")
+# Filtering Data
+filtered_df = day_df.copy()
+if season != 'All Season':
+    season_map = {'Spring': 1, 'Summer': 2, 'Fall': 3, 'Winter': 4}
+    filtered_df = filtered_df[filtered_df['season'] == season_map[season]]
 
-# Statistik Dasar
-st.subheader("Statistik Dasar")
-st.write(day_df.describe())
+if workday != 'All':
+    work_map = {'Workday': 1, 'Weekend': 0}
+    filtered_df = filtered_df[filtered_df['workingday'] == work_map[workday]]
 
-# Menampilkan jumlah missing values
-st.subheader("Missing Values")
-st.write(missing_values)
-
-## === Fitur Interaktif === ##
-st.sidebar.header("Filter Data")
-
-# Filter berdasarkan musim (season)
-season_options = {
-    1: "Spring",
-    2: "Summer",
-    3: "Fall",
-    4: "Winter"
-}
-selected_season = st.sidebar.selectbox("Pilih Musim:", options=list(season_options.keys()), format_func=lambda x: season_options[x])
-
-# Filter berdasarkan cuaca (weathersit)
-weather_options = {
-    1: "Clear, Few clouds, Partly cloudy",
-    2: "Mist + Cloudy / Broken clouds / Few clouds / Mist",
-    3: "Light Snow, Light Rain + Thunderstorm + Scattered clouds",
-    4: "Heavy Rain + Ice Pellets + Thunderstorm + Mist, Snow + Fog"
-}
-selected_weather = st.sidebar.multiselect("Pilih Kondisi Cuaca:", options=list(weather_options.keys()), format_func=lambda x: weather_options[x])
-
-# Filter berdasarkan hari kerja atau akhir pekan
-workingday_options = {
-    1: "Hari Kerja (Bukan Akhir Pekan atau Libur)",
-    0: "Akhir Pekan atau Hari Libur"
-}
-selected_workingday = st.sidebar.radio("Pilih Jenis Hari:", options=list(workingday_options.keys()), format_func=lambda x: workingday_options[x])
-
-# Filter dataset berdasarkan pilihan pengguna
-filtered_df = day_df[(day_df["season"] == selected_season) & (day_df["workingday"] == selected_workingday)]
-
-# Jika pengguna memilih lebih dari satu kondisi cuaca, lakukan filter
-if selected_weather:
-    filtered_df = filtered_df[filtered_df["weathersit"].isin(selected_weather)]
-
-# Tampilkan data yang sudah difilter
-st.subheader("Data Setelah Difilter")
-st.write(filtered_df)
-
-# Visualisasi Total Peminjaman Sepeda Berdasarkan Kondisi Cuaca
+# Visualisasi: Total Peminjaman Sepeda berdasarkan Kondisi Cuaca
 st.subheader("Total Peminjaman Sepeda berdasarkan Kondisi Cuaca")
 fig, ax = plt.subplots(figsize=(10, 5))
 sns.barplot(x='weathersit', y='cnt', data=filtered_df, estimator=sum, ci=None, palette='Blues', ax=ax)
-ax.set_xlabel("Kondisi Cuaca")
-ax.set_ylabel("Total Peminjaman")
+ax.set_title('Total Peminjaman Sepeda berdasarkan Kondisi Cuaca')
+ax.set_xlabel('Kondisi Cuaca')
+ax.set_ylabel('Total Peminjaman')
+ax.grid(True)
 st.pyplot(fig)
 
-# Visualisasi Peminjaman Sepeda pada Hari Kerja vs Akhir Pekan
+# Visualisasi: Distribusi Peminjaman Sepeda pada Hari Kerja dan Akhir Pekan
 st.subheader("Distribusi Peminjaman Sepeda pada Hari Kerja dan Akhir Pekan")
 fig, ax = plt.subplots(figsize=(10, 5))
-sns.histplot(data=filtered_df, x='cnt', kde=True, bins=30, palette='coolwarm', ax=ax)
-ax.set_xlabel("Jumlah Peminjaman")
-ax.set_ylabel("Frekuensi")
+workingday_labels = {1: "Workday", 0: "Weekend"}
+filtered_df['workingday_label'] = filtered_df['workingday'].map(workingday_labels)
+sns.histplot(data=filtered_df, x='cnt', hue='workingday_label', kde=True, bins=30, palette={"Workday": "#1f77b4", "Weekend": "#ff7f0e"}, ax=ax)
+ax.set_title('Distribusi Peminjaman Sepeda pada Hari Kerja dan Akhir Pekan')
+ax.set_xlabel('Jumlah Peminjaman')
+ax.set_ylabel('Frekuensi')
+ax.grid(True)
 st.pyplot(fig)
